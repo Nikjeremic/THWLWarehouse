@@ -6,6 +6,7 @@ import { getMaterials, updateMaterial, createMaterial, deleteMaterial } from '..
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import axios from 'axios';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 function calculateMaterialFields(m) {
   const yearlyKg = m.dailyConsumptionKg * 365;
@@ -86,6 +87,8 @@ export default function Materials() {
     usageDate: new Date().toISOString().split('T')[0],
     napomena: '',
   });
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
 
   const handleEditCellChange = (params) => {
     if (params.field === 'stock') {
@@ -116,10 +119,16 @@ export default function Materials() {
     setEditOpen(true);
   };
 
-  const handleDelete = (row) => {
-    if (window.confirm('Da li ste sigurni da želite da obrišete ovu sirovinu?')) {
-      deleteMutation.mutate(row.id);
-    }
+  const handleDeleteClick = (id) => {
+    setDeleteId(id);
+    setConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    setConfirmOpen(false);
+    if (!deleteId) return;
+    deleteMutation.mutate(deleteId);
+    setDeleteId(null);
   };
 
   const handleClose = () => {
@@ -343,7 +352,7 @@ export default function Materials() {
           <IconButton 
             size="small" 
             color="error" 
-            onClick={() => handleDelete(params.row)}
+            onClick={() => handleDeleteClick(params.row.id)}
             sx={{ padding: 0.5 }}
           >
             <DeleteIcon fontSize="small" />
@@ -748,6 +757,15 @@ export default function Materials() {
           </DialogActions>
         </form>
       </Dialog>
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Potvrda brisanja"
+        content="Da li ste sigurni da želite da obrišete ovaj materijal?"
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        confirmText="Obriši"
+        cancelText="Otkaži"
+      />
       <Typography variant="body2" color="text.secondary">
         * Stanje je moguće menjati direktno u tabeli. Sve vrednosti se automatski preračunavaju i čuvaju na serveru.
       </Typography>

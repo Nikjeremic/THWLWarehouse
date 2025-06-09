@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function UsageHistory() {
   const { data: usageHistory, isLoading, error } = useQuery({
@@ -13,6 +14,8 @@ export default function UsageHistory() {
   });
 
   const [selectedUsage, setSelectedUsage] = useState(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteUsage, setDeleteUsage] = useState(null);
 
   if (isLoading) return <Typography>Učitavanje podataka...</Typography>;
   if (error) return <Typography color="error">Greška pri učitavanju podataka: {error.message}</Typography>;

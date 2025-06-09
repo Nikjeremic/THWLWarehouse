@@ -30,6 +30,8 @@ import { Download as DownloadIcon } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import axios from 'axios';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const reportTypes = [
   { id: 'stock', name: 'Stanje zaliha' },
@@ -47,7 +49,7 @@ const periods = [
   { id: 'custom', name: 'Prilagođeni period' }
 ];
 
-const MaterialReports = () => {
+const MaterialReports = (props) => {
   const [reportType, setReportType] = useState(reportTypes[0].id);
   const [period, setPeriod] = useState(periods[0].id);
   const [startDate, setStartDate] = useState(null);
@@ -120,6 +122,45 @@ const MaterialReports = () => {
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
     const fileName = `izvestaj_${from}_${to}.xlsx`;
     saveAs(new Blob([excelBuffer], { type: 'application/octet-stream' }), fileName);
+  };
+
+  const handleExportPDF = () => {
+    if (!report.length) return;
+    const doc = new jsPDF();
+    if (props.user && props.user.logo) {
+      doc.addImage(props.user.logo, 'PNG', 10, 8, 30, 18);
+    }
+    const now = new Date();
+    doc.setFontSize(10);
+    doc.text(`Izvezeno: ${now.toLocaleDateString('sr-RS')} ${now.toLocaleTimeString('sr-RS')}`, 150, 15, { align: 'right' });
+    doc.setFontSize(16);
+    doc.text('Izveštaj o sirovinama', 14, 35);
+    autoTable(doc, {
+      startY: 45,
+      head: [[
+        'Naziv materijala',
+        'Početno stanje',
+        'Ulaz',
+        'Stanje',
+        'Potrošnja',
+        'Cena (EUR/kg/kom)',
+        'Potrošnja u EUR',
+        'Potrošnja za 2 spinera',
+        'Potrošnja za 1 spiner'
+      ]],
+      body: report.map(r => [
+        r.material,
+        r.pocetnoStanje,
+        r.ulaz,
+        r.stanje,
+        r.potrosnja,
+        r.poslednjaCena,
+        r.potrosnjaEUR,
+        r.potrosnja2sp,
+        r.potrosnja1sp
+      ]),
+    });
+    doc.save(`izvestaj_${from}_${to}.pdf`);
   };
 
   return (
@@ -292,6 +333,11 @@ const MaterialReports = () => {
             <Grid item>
               <Button variant="contained" color="success" onClick={handleExport} disabled={!report.length}>
                 Export u Excel
+              </Button>
+            </Grid>
+            <Grid item>
+              <Button variant="contained" color="secondary" onClick={handleExportPDF} disabled={!report.length} sx={{ ml: 1 }}>
+                Export u PDF
               </Button>
             </Grid>
           </Grid>

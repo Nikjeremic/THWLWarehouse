@@ -8,30 +8,29 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Mongoose model
-const materialSchema = new mongoose.Schema({
-  material: { type: String, required: true },
-  dailyConsumptionKg: { type: Number, required: true },
-  stock: { type: Number, required: true },
-  unit: { type: String },
-  supplier: { type: String },
-  originCountry: { type: String },
-  paymentTerms: { type: String },
-  importHistory: [{
-    importDate: { type: Date, default: Date.now },
-    quantity: { type: Number, required: true },
-    cenaEUR: { type: Number, required: true },
-    brojOtpremnice: { type: String },
-    dobavljac: { type: String },
-    napomena: { type: String }
-  }],
-  usageHistory: [{
-    usageDate: { type: Date, default: Date.now },
-    quantity: { type: Number, required: true },
-    napomena: { type: String }
-  }]
+const materialOrdersRouter = require('./routes/materialOrders');
+const Material = require('./models/Material');
+const usersRouter = require('./routes/users');
+
+// Middleware za proveru prava pristupa po roli
+const routeRoles = {
+  '/api/materials': ['admin', 'magacioner', 'logistika'],
+  '/api/material-orders': ['admin', 'logistika'],
+  '/api/finance': ['admin', 'finansije'],
+  '/api/sales': ['admin', 'prodaja'],
+  '/api/maintenance': ['admin', 'odrzavanje'],
+};
+
+app.use((req, res, next) => {
+  if (!req.user) return next(); // Public rute
+  if (req.user.role === 'admin') return next(); // Admin ima pristup svemu
+  // Pronađi bazni path
+  const basePath = Object.keys(routeRoles).find((path) => req.path.startsWith(path));
+  if (basePath && !routeRoles[basePath].includes(req.user.role)) {
+    return res.status(403).json({ message: 'Nemate prava pristupa ovoj sekciji.' });
+  }
+  next();
 });
-const Material = mongoose.model('Material', materialSchema);
 
 // API routes
 app.get('/api/materials', async (req, res) => {
@@ -46,7 +45,12 @@ app.post('/api/materials', async (req, res) => {
 });
 
 app.put('/api/materials/:id', async (req, res) => {
-  const material = await Material.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  const updates = {
+    ...req.body,
+    lastModifiedBy: req.user?.email || 'nepoznat',
+    lastModifiedAt: new Date(),
+  };
+  const material = await Material.findByIdAndUpdate(req.params.id, updates, { new: true });
   res.json(material);
 });
 
@@ -72,6 +76,7 @@ app.get('/api/materials/import-history', async (req, res) => {
       return (material.importHistory || []).map(import_ => ({
         _id: import_._id || new mongoose.Types.ObjectId(),
         material: material.material,
+        materialId: material._id,
         importDate: import_.importDate,
         quantity: import_.quantity
       }));
@@ -294,11 +299,15 @@ app.delete('/api/materials/:id/import/:importId', async (req, res) => {
   }
 });
 
+app.use('/api/material-orders', materialOrdersRouter);
+app.use('/api/users', usersRouter);
+
 // Connect to MongoDB and start server
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
-    app.listen(process.env.PORT, () => {
-      console.log('Server running on port', process.env.PORT);
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+      console.log(`Server radi na portu ${PORT}`);
     });
   })
   .catch(err => console.error(err)); 

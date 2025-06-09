@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function ImportHistory() {
   const queryClient = useQueryClient();
@@ -24,18 +25,27 @@ export default function ImportHistory() {
 
   const [selectedImport, setSelectedImport] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteImport, setDeleteImport] = useState(null);
 
-  const handleDelete = async () => {
-    if (!selectedImport) return;
+  const handleDeleteClick = (import_) => {
+    setDeleteImport(import_);
+    setConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    setConfirmOpen(false);
+    if (!deleteImport) return;
     setDeleting(true);
     try {
-      await axios.delete(`http://localhost:3001/api/materials/${selectedImport.materialId}/import/${selectedImport._id}`);
+      await axios.delete(`http://localhost:3001/api/materials/${deleteImport.materialId}/import/${deleteImport._id}`);
       setSelectedImport(null);
       queryClient.invalidateQueries(['importHistory']);
     } catch (error) {
       alert('Greška pri brisanju uvoza: ' + (error.response?.data?.message || error.message));
     }
     setDeleting(false);
+    setDeleteImport(null);
   };
 
   if (isLoading) {
@@ -96,7 +106,7 @@ export default function ImportHistory() {
       </TableContainer>
 
       {/* Dijalog za detalje uvoza */}
-      <Dialog open={!!selectedImport} onClose={() => setSelectedImport(null)} maxWidth="xs" fullWidth>
+      <Dialog open={!!selectedImport} onClose={() => setSelectedImport(null)}>
         <DialogTitle>Detalji uvoza</DialogTitle>
         <DialogContent dividers>
           {selectedImport && (
@@ -113,11 +123,20 @@ export default function ImportHistory() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setSelectedImport(null)}>Zatvori</Button>
-          <Button color="error" onClick={handleDelete} disabled={deleting}>
+          <Button color="error" onClick={() => handleDeleteClick(selectedImport)} disabled={deleting}>
             Obriši unos
           </Button>
         </DialogActions>
       </Dialog>
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Potvrda brisanja"
+        content="Da li ste sigurni da želite da obrišete ovaj unos iz istorije uvoza?"
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        confirmText="Obriši"
+        cancelText="Otkaži"
+      />
     </Box>
   );
 } 
