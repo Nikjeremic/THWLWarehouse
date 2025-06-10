@@ -3,6 +3,7 @@ console.log('MONGO_URI:', process.env.MONGO_URI);
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 app.use(cors());
@@ -301,6 +302,7 @@ app.delete('/api/materials/:id/import/:importId', async (req, res) => {
 
 app.use('/api/material-orders', materialOrdersRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/auth', authRoutes);
 
 // Connect to MongoDB and start server
 mongoose.connect(process.env.MONGO_URI)
@@ -310,4 +312,6 @@ mongoose.connect(process.env.MONGO_URI)
       console.log(`Server radi na portu ${PORT}`);
     });
   })
-  .catch(err => console.error(err)); 
+  .catch(err => console.error(err));
+
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'super_tajni_kljuc_za_token'; 

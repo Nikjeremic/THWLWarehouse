@@ -15,8 +15,12 @@ const checkRole = (role) => (req, res, next) => {
 
 // Lista svih korisnika (samo admin)
 router.get('/', checkRole('admin'), async (req, res) => {
-  const users = await User.find({}, '-password');
-  res.json(users);
+  try {
+    const users = await User.find({}, '-password').populate('company');
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: 'Greška pri učitavanju korisnika.' });
+  }
 });
 
 // Kreiranje korisnika (admin, ili prvi admin bez autentikacije)
@@ -29,8 +33,13 @@ router.post('/', async (req, res, next) => {
   // Ako nema admina, dozvoli kreiranje bez autentikacije
   try {
     const { name, email, password, gender, company, role, theme, avatar, logo } = req.body;
+    // Proveri da li kompanija postoji
+    const companyDoc = await require('../models/Company').findOne({ name: company });
+    if (!companyDoc) {
+      return res.status(400).json({ message: 'Kompanija ne postoji.' });
+    }
     const hash = await bcrypt.hash(password, 10);
-    const user = new User({ name, email, password: hash, gender, company, role, theme, avatar, logo });
+    const user = new User({ name, email, password: hash, gender, company: companyDoc._id, role, theme, avatar, logo });
     await user.save();
     res.status(201).json({ message: 'Korisnik kreiran.' });
   } catch (err) {
@@ -53,12 +62,19 @@ router.post('/login', async (req, res) => {
 
 // Ažuriranje korisnika (admin ili sam korisnik)
 router.put('/:id', async (req, res) => {
-  const { password, ...rest } = req.body;
+  const { password, company, ...rest } = req.body;
   let update = { ...rest };
+  if (company) {
+    const companyDoc = await require('../models/Company').findOne({ name: company });
+    if (!companyDoc) {
+      return res.status(400).json({ message: 'Kompanija ne postoji.' });
+    }
+    update.company = companyDoc._id;
+  }
   if (password) {
     update.password = await bcrypt.hash(password, 10);
   }
-  const user = await User.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
+  const user = await User.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true }).populate('company');
   if (!user) return res.status(404).json({ message: 'Korisnik nije pronađen.' });
   const { password: _, ...userData } = user.toObject();
   res.json(userData);
@@ -73,6 +89,16 @@ router.delete('/:id', checkRole('admin'), async (req, res) => {
 // Dohvati profil (sam korisnik)
 router.get('/:id', async (req, res) => {
   const user = await User.findById(req.params.id, '-password');
+  if (!user) return res.status(404).json({ message: 'Korisnik nije pronađen.' });
+  res.json(user);
+});
+
+// Dohvati podatke o trenutno ulogovanom korisniku
+router.get('/me', async (req, res) => {
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ message: 'Niste autorizovani.' });
+  }
+  const user = await User.findById(req.user.id, '-password').populate('company');
   if (!user) return res.status(404).json({ message: 'Korisnik nije pronađen.' });
   res.json(user);
 });

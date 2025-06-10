@@ -133,7 +133,7 @@ const AdminUserManagement = () => {
               <TableCell>{u.name}</TableCell>
               <TableCell>{u.email}</TableCell>
               <TableCell>{u.gender === 'female' ? 'Ženski' : 'Muški'}</TableCell>
-              <TableCell>{u.company}</TableCell>
+              <TableCell>{u.company?.name || ''}</TableCell>
               <TableCell>{roles.find(r => r.value === u.role)?.label}</TableCell>
               <TableCell>{themeOptions.find(t => t.value === u.theme)?.label}</TableCell>
               <TableCell>

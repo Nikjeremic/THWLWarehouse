@@ -100,10 +100,12 @@ function App() {
     setLoading(true);
     setError('');
     try {
-      const res = await api.post('/users/login', { email, password });
+      const res = await api.post('/auth/login', { email, password });
       setUser(res.data.user);
       setToken(res.data.token);
       localStorage.setItem('token', res.data.token);
+      // Čuvaj user podatke u localStorage za automatski login
+      setStoredUser(res.data.user);
     } catch (err) {
       setError('Pogrešan email ili lozinka.');
     } finally {

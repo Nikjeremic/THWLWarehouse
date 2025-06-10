@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Button, TextField, Typography, Paper, Avatar, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Box, Button, TextField, Typography, Paper, Avatar, Dialog, DialogTitle, DialogContent, DialogActions, Grid } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 
 const Login = ({ onLogin, loading, error }) => {
@@ -11,6 +11,12 @@ const Login = ({ onLogin, loading, error }) => {
     email: '',
     password: '',
     company: '',
+    address: '',
+    city: '',
+    country: '',
+    phone: '',
+    companyEmail: '',
+    vatNumber: '',
     role: 'admin',
     gender: 'male',
     theme: 'blue',
@@ -29,7 +35,7 @@ const Login = ({ onLogin, loading, error }) => {
     setRegLoading(true);
     setRegError('');
     try {
-      const res = await fetch('/api/users', {
+      const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(regForm),
@@ -92,15 +98,121 @@ const Login = ({ onLogin, loading, error }) => {
           Registruj se kao admin
         </Button>
       </Paper>
-      <Dialog open={registerOpen} onClose={() => setRegisterOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Registracija admina</DialogTitle>
+
+      <Dialog open={registerOpen} onClose={() => setRegisterOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Registracija admina i kompanije</DialogTitle>
         <form onSubmit={handleRegister}>
           <DialogContent>
-            <TextField label="Ime i prezime" name="name" value={regForm.name} onChange={e => setRegForm(f => ({ ...f, name: e.target.value }))} fullWidth sx={{ mb: 2 }} required />
-            <TextField label="Email" name="email" value={regForm.email} onChange={e => setRegForm(f => ({ ...f, email: e.target.value }))} fullWidth sx={{ mb: 2 }} required />
-            <TextField label="Lozinka" name="password" type="password" value={regForm.password} onChange={e => setRegForm(f => ({ ...f, password: e.target.value }))} fullWidth sx={{ mb: 2 }} required />
-            <TextField label="Kompanija" name="company" value={regForm.company} onChange={e => setRegForm(f => ({ ...f, company: e.target.value }))} fullWidth sx={{ mb: 2 }} required />
-            {regError && <Typography color="error">{regError}</Typography>}
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Typography variant="h6" sx={{ mb: 2 }}>Podaci o kompaniji</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Naziv kompanije"
+                  name="company"
+                  value={regForm.company}
+                  onChange={e => setRegForm(f => ({ ...f, company: e.target.value }))}
+                  fullWidth
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Adresa"
+                  name="address"
+                  value={regForm.address}
+                  onChange={e => setRegForm(f => ({ ...f, address: e.target.value }))}
+                  fullWidth
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Grad"
+                  name="city"
+                  value={regForm.city}
+                  onChange={e => setRegForm(f => ({ ...f, city: e.target.value }))}
+                  fullWidth
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Država"
+                  name="country"
+                  value={regForm.country}
+                  onChange={e => setRegForm(f => ({ ...f, country: e.target.value }))}
+                  fullWidth
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Telefon"
+                  name="phone"
+                  value={regForm.phone}
+                  onChange={e => setRegForm(f => ({ ...f, phone: e.target.value }))}
+                  fullWidth
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Email kompanije"
+                  name="companyEmail"
+                  type="email"
+                  value={regForm.companyEmail}
+                  onChange={e => setRegForm(f => ({ ...f, companyEmail: e.target.value }))}
+                  fullWidth
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="PIB"
+                  name="vatNumber"
+                  value={regForm.vatNumber}
+                  onChange={e => setRegForm(f => ({ ...f, vatNumber: e.target.value }))}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <Typography variant="h6" sx={{ mb: 2, mt: 2 }}>Podaci o adminu</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Ime i prezime"
+                  name="name"
+                  value={regForm.name}
+                  onChange={e => setRegForm(f => ({ ...f, name: e.target.value }))}
+                  fullWidth
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Email"
+                  name="email"
+                  type="email"
+                  value={regForm.email}
+                  onChange={e => setRegForm(f => ({ ...f, email: e.target.value }))}
+                  fullWidth
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Lozinka"
+                  name="password"
+                  type="password"
+                  value={regForm.password}
+                  onChange={e => setRegForm(f => ({ ...f, password: e.target.value }))}
+                  fullWidth
+                  required
+                />
+              </Grid>
+            </Grid>
+            {regError && <Typography color="error" sx={{ mt: 2 }}>{regError}</Typography>}
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setRegisterOpen(false)}>Otkaži</Button>
